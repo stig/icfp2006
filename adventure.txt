@@ -1,0 +1,42 @@
+./adventure
+north
+take bolt
+take spring
+inc spring
+take button
+take processor
+take pill
+inc pill
+take radio
+take cache
+take blue transistor
+c processor cache
+c blue transistor radio
+take antenna
+inc antenna
+take screw
+take motherboard
+c motherboard screw
+take A-1920-IXB
+c A-1920-IXB bolt
+c A-1920-IXB processor
+take red transistor
+take keypad
+c keypad button
+c radio a-1920-ixb
+c red transistor a-1920-ixb
+c a-1920-ixb motherboard
+c motherboard keypad
+south
+take pamphlet
+inc pamphlet
+take manifesto
+use keypad
+
+take /etc/passwd
+inc /etc/passwd
+take note
+inc note
+
+east
+
