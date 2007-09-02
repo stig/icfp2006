@@ -13,6 +13,14 @@ typedef struct {
     um_uint content[];
 } um_array;
 
+
+/* allows us to store a list of indices that can be reused */
+typedef struct _um_freelist {
+    struct _um_freelist *next;
+    size_t idx;
+} um_freelist;
+
+
 /* we need to store lengths of collections */
 struct um {
     size_t pc,          /* program counter ("finger") */
@@ -20,7 +28,20 @@ struct um {
            next;        /* next slot for platter array */
     um_uint reg[8];     /* UM registers */
     um_array **parr;    /* collection of platter arrays */
+    um_freelist *free;  /* free list; holds indices into parr that can be reused */
 };
+
+
+/* create a node for the freelist */
+static inline um_freelist *um_freelist_push(um_freelist *p, um_uint n)
+{
+    um_freelist *l = calloc(sizeof(um_freelist), 1);
+    assert(l != NULL);
+    l->idx = n;
+    if (p)
+        l->next = p;
+    return l;
+}
 
 /* allocates room for more platter arrays */
 static void um_ppuirealloc(struct um *p, size_t size)
@@ -31,7 +52,7 @@ static void um_ppuirealloc(struct um *p, size_t size)
     /* init new pointers to NULL */
     memset(p->parr + p->len, 0, size - p->len);
 
-//    fprintf(stderr, "allocating parent array of size: %e\n", (float)size);
+//    fprintf(stderr, "allocating parent array of size: 0x%x\n", (um_uint)size);
     /* update the count of elements */
     p->len = size;
 }
@@ -139,21 +160,36 @@ static int um_run(struct um *um)
                 for (size_t i = 0; i < um->len; i++)
                     if (um->parr[i])
                         free(um->parr[i]);
+                for (um_freelist *l; l = um->free; free(l))
+                    um->free = l->next;                
                 free(um->parr);
                 return 0;
                 break;
 
             case 8: /* Allocation. */
-                if (++um->next == um->len)
-                    um_ppuirealloc(um, um->len * 2);
-                assert(um->parr[um->next] == NULL);
-                um->parr[um->next] = um_mkarray( REGC );
-                REGB = um->next;
+                { 
+                    um_uint idx;
+                    if (um->free) {
+                        um_freelist *l = um->free;
+                        um->free = l->next;
+                        idx = l->idx;
+                        free(l);
+                    }
+                    else {
+                        if (++um->next == um->len)
+                            um_ppuirealloc(um, um->len * 2);
+                        idx = um->next;
+                    }
+                    assert(um->parr[ idx ] == NULL);
+                    um->parr[ idx ] = um_mkarray( REGC );
+                    REGB = idx;
+                }
                 break;
 
             case 9: /* Abandonment. */
                 assert(um->parr[ REGC ] != NULL);
                 free(um->parr[ REGC ]);
+                um->free = um_freelist_push( um->free, REGC );
                 um->parr[ REGC ] = NULL;
                 break;
 
