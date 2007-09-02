@@ -18,8 +18,8 @@ char *ops[] = {
 	"HALT",
 	"ALLOC",
 	"FREE",
-	"OUT",
-	"INPUT",
+	"PRINT",
+	"READ",
 	"LOAD",
 	"SET",
 };
@@ -31,7 +31,7 @@ typedef struct _um_arr {
 } um_arr;
 
 #define nand(a, b) ~((a) & (b))
-#define mod(n) ((n) % 0xffffffff)
+#define mod(n) ((n) & 0xffffffff)
 
 /* operators are found in the high nibble */
 #define um_op(n) (n >> 28)
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
     for (;;) {
 		assert(finger < m[0]->len);
     	uint p = m[0]->a[finger++];
-    	debug(p, r, finger - 1);
+ //   	debug(p, r, finger - 1);
     	uint *A = r + um_seg_a(p);
     	uint *B = r + um_seg_b(p);
     	uint *C = r + um_seg_c(p);
