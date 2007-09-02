@@ -137,13 +137,13 @@ int main(int argc, char **argv)
 
 int main(void)
 {
-    printf("%u\n", um_op(0xf0000000));
-    printf("%u\n", um_seg_c(0xffffffff));
-    printf("%u\n", um_seg_b(0xffffffff));
-    printf("%u\n", um_seg_a(0xffffffff));
-    printf("%u\n", um_op13_seg(0xffffffff));
-    printf("%u\n", um_op13_val(0xffffffff));
-
+   	assert(um_op(0xf0000000) == 15);
+   	assert(um_seg_c(0xffffffff) == 7);
+    assert(um_seg_b(0xffffffff) == 7);
+    assert(um_seg_a(0xffffffff) == 7);
+    assert(um_op13_seg(0xffffffff) == 7);
+    assert(um_op13_val(0xffffffff) == 33554431);
+	puts("all ok");
     return 0;
 }
 
