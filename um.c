@@ -157,9 +157,6 @@ static int um_run(struct um *um)
                 break;
 
             case 7: /* Halt. */
-                for (size_t i = 0; i < um->len; i++)
-                    if (um->parr[i])
-                        free(um->parr[i]);
                 for (um_freelist *l; l = um->free; free(l))
                     um->free = l->next;                
                 free(um->parr);
@@ -180,17 +177,14 @@ static int um_run(struct um *um)
                             um_ppuirealloc(um, um->len * 2);
                         idx = um->next;
                     }
-                    assert(um->parr[ idx ] == NULL);
                     um->parr[ idx ] = um_mkarray( REGC );
                     REGB = idx;
                 }
                 break;
 
             case 9: /* Abandonment. */
-                assert(um->parr[ REGC ] != NULL);
                 free(um->parr[ REGC ]);
                 um->free = um_freelist_push( um->free, REGC );
-                um->parr[ REGC ] = NULL;
                 break;
 
             case 10: /* Output. */
