@@ -7,31 +7,16 @@
 typedef unsigned int uint;
 
 /* opcodes */
-char *ops[] = {
-	"COND",
-	"INDEX",
-	"AMEND",
-	"ADD",
-	"MUL",
-	"DIV",
-	"NAND",
-	"HALT",
-	"ALLOC",
-	"FREE",
-	"PRINT",
-	"READ",
-	"LOAD",
-	"SET",
+char *ops[] = {	
+	"COND", "INDEX", "AMEND", "ADD", "MUL",	"DIV", "NAND", "HALT",
+	"ALLOC", "FREE", "PRINT", "READ", "LOAD", "SET",
 };
 
 /* we need to store lengths of collections */
-typedef struct _um_arr {
+typedef struct {
 	size_t len;
 	uint *a;
 } um_arr;
-
-#define nand(a, b) ~((a) & (b))
-#define mod(n) ((n) & 0xffffffff)
 
 /* operators are found in the high nibble */
 #define um_op(n) (n >> 28)
@@ -166,71 +151,59 @@ int main(int argc, char **argv)
     	uint *B = r + um_seg_b(p);
     	uint *C = r + um_seg_c(p);
     	uint op = um_op(p);
+//    	fprintf(stderr, "%s\n", ops[op]);
         switch (op) {
+        
             case 0: /* Conditional Move. */
-
 				if (*C) {
 					*A = *B;
 				}
                 break;
 
             case 1: /* Array Index. */
-
 				assert(*B < mlen);
 				assert(m[ *B ] != NULL);
 				assert(m[ *B ]->len > *C);
-				
 				*A = m[ *B ]->a[ *C ];
                 break;
 
             case 2: /* Array Amendment. */
-
 				assert(*A < mlen);
 				assert(m[ *A ] != NULL);
 				assert(m[ *A ]->len > *B);
-				
 				m[ *A ]->a[ *B ] = *C;
                 break;
 
             case 3: /* Addition. */
-				
 				*A = mod(*B + *C);
                 break;
 
             case 4: /* Multiplication. */
-
 				*A = mod(*B * *C);
                 break;
 
             case 5: /* Division. */
-
 				assert(*C);	/* don't devide by zero */
 				*A = (uint)*B / (uint)*C;
                 break;
 
             case 6: /* Not-And. */
-
-				*A = nand(*B, *C);
+				*A = ~(*B & *C);
                 break;
 
             case 7: /* Halt. */
-
-				puts("Exiting");
                 exit(0);
                 break;
 
             case 8: /* Allocation. */
-            
             	{
             		uint i;
             		for (i = 0; i < mlen; i++)
             			if (!m[i])
             				break;
-
             		if (i == mlen) {
             			m = um_ppuirealloc(m, &mlen, mlen * 2);
             		}
-            		
             		assert(m[i] == NULL);
             		m[i] = um_uicalloc( *C );
             		*B = i;
@@ -238,23 +211,19 @@ int main(int argc, char **argv)
                 break;
 
             case 9: /* Abandonment. */
-
 				um_free(m[ *C ]);
 				m[ *C ] = NULL;
                 break;
 
             case 10: /* Output. */
-
 				um_out(*C);
                 break;
 
             case 11: /* Input. */
-
 				puts("Input unhandled");
                 break;
 
             case 12: /* Load Program. */
-            
             	if (*B) {
             		uint i;
 	            	um_free(m[0]);
@@ -269,7 +238,6 @@ int main(int argc, char **argv)
                 break;
 
             case 13: /* Orthography. */
-
 				r[ um_op13_seg(p) ] = um_op13_val(p);
                 break;
 
