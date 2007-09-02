@@ -14,7 +14,7 @@ typedef struct {
 
 /* we need to store lengths of collections */
 struct um {
-    size_t pc, len;
+    size_t pc, len, next;
     um_uint reg[8];
     um_array **parr;
 };
@@ -180,17 +180,11 @@ int main(int argc, char **argv)
                 break;
 
             case 8: /* Allocation. */
-                {
-                    um_uint i;
-                    for (i = 0; i < um.len; i++)
-                        if (!um.parr[i])
-                            break;
-                    if (i == um.len)
-                        um_ppuirealloc(&um, um.len * 2);
-                    assert(um.parr[i] == NULL);
-                    um.parr[i] = um_mkarray( REGC );
-                    REGB = i;
-                }
+                if (++um.next == um.len)
+                    um_ppuirealloc(&um, um.len * 2);
+                assert(um.parr[um.next] == NULL);
+                um.parr[um.next] = um_mkarray( REGC );
+                REGB = um.next;
                 break;
 
             case 9: /* Abandonment. */
