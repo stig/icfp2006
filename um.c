@@ -46,6 +46,7 @@ void um_ppuirealloc(struct um *p, size_t size)
     /* init new pointers to NULL */
     memset(p->parr + p->len, 0, size - p->len);
 
+//    fprintf(stderr, "allocating parent array of size: %e\n", (float)size);
     /* update the count of elements */
     p->len = size;
 }
@@ -177,7 +178,8 @@ int main(int argc, char **argv)
 
             case 7: /* Halt. */
                 for (size_t i = 0; i < um.len; i++)
-                    free(um.parr[i]);
+                    if (um.parr[i])
+                        free(um.parr[i]);
                 free(um.parr);
                 exit(0);
                 break;
