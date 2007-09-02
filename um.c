@@ -25,21 +25,21 @@ typedef struct {
 #define um_op(n) (n >> 28)
 
 /* extract segment values */
-#define SEGC(n) (n & 07)            /* segment REGC */
-#define SEGB(n) ((n >> 3) & 07)     /* segment REGB */
-#define SEGA(n) ((n >> 6) & 07)     /* segment REGA */
+#define SEGC(n) (n & 07)            /* segment C */
+#define SEGB(n) ((n >> 3) & 07)     /* segment B */
+#define SEGA(n) ((n >> 6) & 07)     /* segment A */
 
 #define REGA r[SEGA(p)]
 #define REGB r[SEGB(p)]
 #define REGC r[SEGC(p)]
 
 /* op 13 is different from the others */
-#define OP13SEG(n) ((n & 0xe000000) >> 25)      /* segment REGA */
+#define OP13SEG(n) ((n & 0xe000000) >> 25)      /* segment A */
 #define OP13VAL(n) (n & 0x1ffffff)              /* value */
 
 
 
-/* REGA bit like realloc, but when _increasing_ the array, 
+/* A bit like realloc, but when _increasing_ the array, 
    initialize new pointers to NULL. */
 um_arr **um_ppuirealloc(um_arr **p, size_t *old, size_t new)
 {
