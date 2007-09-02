@@ -161,7 +161,7 @@ static int um_run(struct um *um)
                     else {
                         if (++um->next == um->len) {
                             um->len *= 2;
-                            um->parr = realloc(um->parr, um->len * sizeof(um_uint));
+                            um->parr = realloc(um->parr, um->len * sizeof(um_uint*));
                         }
                         idx = um->next;
                     }
@@ -215,7 +215,7 @@ int main(int argc, char **argv)
     struct um um = { 0 };
     
     um.len = 128;   /* preallocate some memory */
-    um.parr = calloc(sizeof(um_uint), um.len);
+    um.parr = calloc(sizeof(um_uint*), um.len);
 
     um.parr[0] = um_read_scroll(argv[1]);
     if (!um_run(&um))
