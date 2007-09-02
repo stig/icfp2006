@@ -47,20 +47,20 @@ uint *um_read_scroll(char *name)
 		for (i = 0; (c = getc(fp)) != EOF; i++) {
 			arr[ i / 4 ] += c >> (3 - i % 4);
 		}
-		assert(len != i);
-		printf("length of file: %u\n", i);
+		assert(len == i);
 	}
 	return arr;
 }		
 		
 		
 
-int main(void)
+int main(int argc, char **argv)
 {
-    uint reg[8] = { 0 };
-//    uint *mem[UINT_MAX] = { NULL };
+    uint r[8] = { 0 };
+    uint *m[16] = { NULL };
     uint finger = 0;
 
+	m[0] = um_read_scroll(argv[1]);
 
 #if 0
     for (;;) {
