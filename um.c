@@ -225,7 +225,6 @@ int main(int argc, char **argv)
 	            	}
 	            }
 				finger = *C;
-
                 break;
 
             case 13: /* Orthography. */
@@ -234,7 +233,7 @@ int main(int argc, char **argv)
                 break;
 
             default:
-            	fprintf(stderr, "illegal operator encounted: '%u'\n", op);
+            	fprintf(stderr, "Illegal operator encounted: '%u'\n", op);
             	exit(EXIT_FAILURE);
             	break;
 		}
