@@ -19,7 +19,7 @@ char *ops[] = {
 	"ALLOC",
 	"FREE",
 	"OUT",
-	"IN",
+	"INPUT",
 	"LOAD",
 	"SET",
 };
