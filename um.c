@@ -3,10 +3,11 @@
 #include <assert.h>
 #include <string.h>
 
-/* I need a fast, unsigned, 32-bit integer type. 
-   C99's got just the thing. */
+/* I need a fast, unsigned, 32-bit integer type. C99's got just the thing. */
 #include <stdint.h>
 typedef uint_fast32_t um_uint;
+
+/* we need to know the length of a platter array to duplicate it */
 typedef struct {
     size_t len;
     um_uint content[];
@@ -14,30 +15,14 @@ typedef struct {
 
 /* we need to store lengths of collections */
 struct um {
-    size_t pc, len, next;
-    um_uint reg[8];
-    um_array **parr;
+    size_t pc,          /* program counter ("finger") */
+           len,         /* length of parent array */
+           next;        /* next slot for platter array */
+    um_uint reg[8];     /* UM registers */
+    um_array **parr;    /* collection of platter arrays */
 };
 
-/* operators are found in the high nibble */
-#define um_op(n) (n >> 28)
-
-/* extract segment values */
-#define SEGC(n) (n & 07)            /* segment C */
-#define SEGB(n) ((n >> 3) & 07)     /* segment B */
-#define SEGA(n) ((n >> 6) & 07)     /* segment A */
-
-#define REGA um.reg[SEGA(p)]
-#define REGB um.reg[SEGB(p)]
-#define REGC um.reg[SEGC(p)]
-
-/* op 13 is different from the others */
-#define OP13SEG(n) ((n & 0xe000000) >> 25)      /* segment A */
-#define OP13VAL(n) (n & 0x1ffffff)              /* value */
-
-
-
-/* allocate room for more platter arrays */
+/* allocates room for more platter arrays */
 void um_ppuirealloc(struct um *p, size_t size)
 {
     p->parr = realloc(p->parr, size * sizeof(um_uint));
@@ -51,6 +36,7 @@ void um_ppuirealloc(struct um *p, size_t size)
     p->len = size;
 }
 
+/* creates a platter array of the given size */
 um_array *um_mkarray(size_t size)
 {
     um_array *p = calloc(size * sizeof(um_uint) + sizeof(um_array), 1);
@@ -58,12 +44,7 @@ um_array *um_mkarray(size_t size)
     return p;
 }
 
-void um_out(um_uint c)
-{
-    assert(c <= 255);
-    putchar(c);
-}
-
+/* read in the program from a file */
 um_array *um_read_scroll(char *name)
 {
     um_array *arr;
@@ -79,12 +60,12 @@ um_array *um_read_scroll(char *name)
         for (len = 0; EOF != getc(fp); len++)
             ;
     
-        /* allocate array of ints big enough */
+        /* allocate array 'big enough' */
         arr = um_mkarray(len / 4 + 1);
         
         rewind(fp);
         
-        /* read bytestream and write into array of ints */
+        /* read bytestream and write into array at correct location */
         for (i = 0; (c = getc(fp)) != EOF; i++) {
             assert(c <= 255);
             assert(c >= 0);
@@ -92,57 +73,35 @@ um_array *um_read_scroll(char *name)
             arr->content[ i / 4 ] += c;
         }
 
-        /* make sure the last int is shifted correctly */
+        /* make sure the last is shifted correctly */
         arr->content[ i / 4] <<= (i % 4) * 8;
-//      printf("i: %u, len: %u\n", i, len);
+        
         assert(len == i);
     }
     return arr;
 }
 
-#if 0
+/* operators are found in the high nibble */
+#define um_op(n) (n >> 28)
 
-#define dbg(X) SEG##X(p), r[SEG##X(p)]
+/* extract segment values */
+#define SEGC(n) (n & 07)            /* segment C */
+#define SEGB(n) ((n >> 3) & 07)     /* segment B */
+#define SEGA(n) ((n >> 6) & 07)     /* segment A */
 
-void debug( um_uint p, um_uint *r, um_uint finger)
+#define REGA um->reg[SEGA(p)]
+#define REGB um->reg[SEGB(p)]
+#define REGC um->reg[SEGC(p)]
+
+/* op 13 is different from the others */
+#define OP13SEG(n) ((n & 0xe000000) >> 25)      /* segment A */
+#define OP13VAL(n) (n & 0x1ffffff)              /* value */
+
+/* run loop */
+int um_run(struct um *um)
 {
-    char *ops[] = { 
-        "COND", "INDEX", "AMEND", "ADD", "MUL", "DIV", "NAND", "HALT",
-        "ALLOC", "FREE", "PRINT", "READ", "LOAD", "SET",
-    };
-
-    int i, n;
-    um_uint op = um_op(p);
-    fprintf(stderr, "%x: %s %n", finger, ops[op], &n);
-    if (op == 13)
-        fprintf(stderr, "reg: %u, val: %x%n", OP13SEG(p), OP13VAL(p), &i);
-    else if (op == 10)
-        fprintf(stderr, "'%c' %n", REGC != '\n' ? REGC : '\\', &i);
-    else
-        fprintf(stderr, "a(%u): %x, b(%u): %x, c(%u): %x%n", dbg(A), dbg(B), dbg(C), &i);
-
-    /* make output line up */
-    for (i = i + n; i < 45; i++)
-        fputc(' ', stderr);
-
-    /* dump registers */
-    for (i = 0; i < 8; i++)
-        fprintf(stderr, "%u:%08x, ", i, r[i]);
-    fputc('\n', stderr);
-}
-
-#endif
-
-int main(int argc, char **argv)
-{
-    struct um um = { 0 };
-    
-    um_ppuirealloc(&um, 1);
-    um.parr[0] = um_read_scroll(argv[1]);
-
     for (;;) {
-        um_uint p = um.parr[0]->content[um.pc++];
- //     debug(p, r, finger - 1);
+        um_uint p = um->parr[0]->content[um->pc++];
         switch (um_op(p)) {
         
             case 0: /* Conditional Move. */
@@ -152,11 +111,11 @@ int main(int argc, char **argv)
                 break;
 
             case 1: /* Array Index. */
-                REGA = um.parr[ REGB ]->content[ REGC ];
+                REGA = um->parr[ REGB ]->content[ REGC ];
                 break;
 
             case 2: /* Array Amendment. */
-                um.parr[ REGA ]->content[ REGB ] = REGC;
+                um->parr[ REGA ]->content[ REGB ] = REGC;
                 break;
 
             case 3: /* Addition. */
@@ -177,29 +136,30 @@ int main(int argc, char **argv)
                 break;
 
             case 7: /* Halt. */
-                for (size_t i = 0; i < um.len; i++)
-                    if (um.parr[i])
-                        free(um.parr[i]);
-                free(um.parr);
-                exit(0);
+                for (size_t i = 0; i < um->len; i++)
+                    if (um->parr[i])
+                        free(um->parr[i]);
+                free(um->parr);
+                return 0;
                 break;
 
             case 8: /* Allocation. */
-                if (++um.next == um.len)
-                    um_ppuirealloc(&um, um.len * 2);
-                assert(um.parr[um.next] == NULL);
-                um.parr[um.next] = um_mkarray( REGC );
-                REGB = um.next;
+                if (++um->next == um->len)
+                    um_ppuirealloc(um, um->len * 2);
+                assert(um->parr[um->next] == NULL);
+                um->parr[um->next] = um_mkarray( REGC );
+                REGB = um->next;
                 break;
 
             case 9: /* Abandonment. */
-                assert(um.parr[ REGC ] != NULL);
-                free(um.parr[ REGC ]);
-                um.parr[ REGC ] = NULL;
+                assert(um->parr[ REGC ] != NULL);
+                free(um->parr[ REGC ]);
+                um->parr[ REGC ] = NULL;
                 break;
 
             case 10: /* Output. */
-                um_out(REGC);
+                assert(REGC <= 255);
+                putchar(REGC);
                 break;
 
             case 11: /* Input. */
@@ -211,25 +171,35 @@ int main(int argc, char **argv)
 
             case 12: /* Load Program. */
                 if (REGB) {
-                    free(um.parr[0]);
-                    um.parr[0] = um_mkarray( um.parr[ REGB ]->len );
-                    memmove(um.parr[ 0 ],
-                            um.parr[ REGB ],
-                            um.parr[ REGB ]->len * sizeof(um_uint) + sizeof(um_array));
+                    free(um->parr[0]);
+                    um->parr[0] = um_mkarray( um->parr[ REGB ]->len );
+                    memmove(um->parr[ 0 ],
+                            um->parr[ REGB ],
+                            um->parr[ REGB ]->len * sizeof(um_uint) + sizeof(um_array));
                 }
-                um.pc = REGC;
+                um->pc = REGC;
                 break;
 
             case 13: /* Orthography. (SET) */
-                um.reg[ OP13SEG(p) ] = OP13VAL(p);
+                um->reg[ OP13SEG(p) ] = OP13VAL(p);
                 break;
 
             default:
                 fprintf(stderr, "Illegal operator encounted: '%u'\n", um_op(p));
-                exit(EXIT_FAILURE);
+                return -1;
                 break;
         }
     }
+}
 
-    return 0;
+
+int main(int argc, char **argv)
+{
+    struct um um = { 0 };
+    
+    um_ppuirealloc(&um, 1);
+    um.parr[0] = um_read_scroll(argv[1]);
+    if (!um_run(&um))
+        return 0;
+    return EXIT_FAILURE;
 }
