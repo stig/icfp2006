@@ -107,7 +107,6 @@ um_arr *um_read_scroll(char *name)
 	return arr;
 }
 		
-#if !UM_TEST
 int main(int argc, char **argv)
 {
     uint r[8] = { 0 };
@@ -241,27 +240,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-
-# else
-
-int main(void)
-{
-	size_t mlen = 0;
-	um_arr **m = um_ppuirealloc(NULL, &mlen, 5);
- 	assert(m[0] == NULL);
-	assert(m[4] == NULL);
-	assert(mlen == 5);
-	
- 	assert(um_op(0xf0000000) == 15);
-   	assert(um_seg_c(0xffffffff) == 7);
-    assert(um_seg_b(0xffffffff) == 7);
-    assert(um_seg_a(0xffffffff) == 7);
-    assert(um_op13_seg(0xffffffff) == 7);
-    assert(um_op13_val(0xffffffff) == 33554431);
-	assert(nand(0xfffffffa, 0xfffffff9) == 7);
-	
-	puts("all ok");
-    return 0;
-}
-
-#endif
