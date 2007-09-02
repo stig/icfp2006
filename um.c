@@ -6,13 +6,31 @@
 /* types */
 typedef unsigned int uint;
 
+/* opcodes */
+char *ops[] = {
+	"COND",
+	"INDEX",
+	"AMEND",
+	"ADD",
+	"MUL",
+	"DIV",
+	"NAND",
+	"HALT",
+	"ALLOC",
+	"FREE",
+	"OUT",
+	"IN",
+	"LOAD",
+	"SET",
+};
+
 /* we need to store lengths of collections */
 typedef struct _um_arr {
 	size_t len;
 	uint *a;
 } um_arr;
 
-#define nand(a, b) (~(a) | ~(b))
+#define nand(a, b) ~((a) & (b))
 #define mod(n) ((n) % 0xffffffff)
 
 /* operators are found in the high nibble */
@@ -106,7 +124,31 @@ um_arr *um_read_scroll(char *name)
 	}
 	return arr;
 }
-		
+
+#define dbg(a) um_seg_##a(p), r[um_seg_##a(p)]
+
+void debug( uint p, uint *r, uint finger)
+{
+	int i, n;
+	uint op = um_op(p);
+  	fprintf(stderr, "%x: %s %n", finger, ops[op], &n);
+	if (op == 13)
+		fprintf(stderr, "reg: %u, val: %x%n", um_op13_seg(p), um_op13_val(p), &i);
+	else if (op == 10)
+		fprintf(stderr, "'%c' %n", r[um_seg_c(p)] != '\n' ? r[um_seg_c(p)] : '\\', &i);
+	else
+		fprintf(stderr, "a(%u): %x, b(%u): %x, c(%u): %x%n", dbg(a), dbg(b), dbg(c), &i);
+
+	/* make output line up */
+	for (i = i + n; i < 45; i++)
+		fputc(' ', stderr);
+
+	/* dump registers */
+	for (i = 0; i < 8; i++)
+	    fprintf(stderr, "%u:%08x, ", i, r[i]);
+	fputc('\n', stderr);
+}
+
 int main(int argc, char **argv)
 {
     uint r[8] = { 0 };
@@ -118,8 +160,8 @@ int main(int argc, char **argv)
 
     for (;;) {
 		assert(finger < m[0]->len);
-		
     	uint p = m[0]->a[finger++];
+    	debug(p, r, finger - 1);
     	uint *A = r + um_seg_a(p);
     	uint *B = r + um_seg_b(p);
     	uint *C = r + um_seg_c(p);
