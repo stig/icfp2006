@@ -23,7 +23,7 @@ struct um {
 };
 
 /* allocates room for more platter arrays */
-void um_ppuirealloc(struct um *p, size_t size)
+static void um_ppuirealloc(struct um *p, size_t size)
 {
     p->parr = realloc(p->parr, size * sizeof(um_uint));
     assert(p != NULL);
@@ -37,7 +37,7 @@ void um_ppuirealloc(struct um *p, size_t size)
 }
 
 /* creates a platter array of the given size */
-um_array *um_mkarray(size_t size)
+static inline um_array *um_mkarray(size_t size)
 {
     um_array *p = calloc(size * sizeof(um_uint) + sizeof(um_array), 1);
     p->len = size;
@@ -45,7 +45,7 @@ um_array *um_mkarray(size_t size)
 }
 
 /* read in the program from a file */
-um_array *um_read_scroll(char *name)
+static um_array *um_read_scroll(char *name)
 {
     um_array *arr;
     assert(name != NULL);
@@ -82,7 +82,7 @@ um_array *um_read_scroll(char *name)
 }
 
 /* operators are found in the high nibble */
-#define um_op(n) (n >> 28)
+#define OP(n) (n >> 28)
 
 /* extract segment values */
 #define SEGC(n) (n & 07)            /* segment C */
@@ -98,11 +98,11 @@ um_array *um_read_scroll(char *name)
 #define OP13VAL(n) (n & 0x1ffffff)              /* value */
 
 /* run loop */
-int um_run(struct um *um)
+static int um_run(struct um *um)
 {
     for (;;) {
         um_uint p = um->parr[0]->content[um->pc++];
-        switch (um_op(p)) {
+        switch (OP(p)) {
         
             case 0: /* Conditional Move. */
                 if (REGC) {
@@ -185,7 +185,7 @@ int um_run(struct um *um)
                 break;
 
             default:
-                fprintf(stderr, "Illegal operator encounted: '%u'\n", um_op(p));
+                fprintf(stderr, "Illegal operator encounted: '%u'\n", OP(p));
                 return -1;
                 break;
         }
