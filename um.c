@@ -97,8 +97,11 @@ um_arr *um_read_scroll(char *name)
 		for (i = 0; (c = getc(fp)) != EOF; i++) {
 			assert(c <= 255);
 			assert(c >= 0);
-			arr->a[ i / 4 ] += c >> (3 - i % 4);
+			arr->a[ i / 4 ] <<= 8;
+			arr->a[ i / 4 ] += c;
 		}
+		/* make sure the last int is shifted correctly */
+		arr->a[ i / 4] <<= (i % 4) * 8;
 //		printf("i: %u, len: %u\n", i, len);
 		assert(len == i);
 	}
@@ -122,7 +125,6 @@ int main(int argc, char **argv)
     	uint b = um_seg_b(p);
     	uint c = um_seg_c(p);
     	uint op = um_op(p);
-        printf("code: %x (op: %u, a: %u, b: %u, c: %u)\n", p, op, a, b, c);
         switch (op) {
             case 0: /* Conditional Move. */
 
@@ -137,8 +139,7 @@ int main(int argc, char **argv)
 				assert(m[b] != NULL);
 				assert(m[b]->len > r[c]);
 				
-				/* XXX: should 'b' be 'r[a]' instead? */
-				r[a] = m[b]->a[ r[c] ];
+				r[a] = m[ r[b] ]->a[ r[c] ];
                 break;
 
             case 2: /* Array Amendment. */
@@ -147,8 +148,7 @@ int main(int argc, char **argv)
 				assert(m[a] != NULL);
 				assert(m[a]->len > r[b]);
 				
-				/* XXX: should 'a' be 'r[a]' instead? */
-				m[a]->a[ r[b] ] = r[c];
+				m[ r[a] ]->a[ r[b] ] = r[c];
                 break;
 
             case 3: /* Addition. */
@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 
             case 6: /* Not-And. */
 
-				r[a] = ~(r[b] | r[c]);
+				r[a] = nand(r[b], r[c]);
                 break;
 
             case 7: /* Halt. */
@@ -200,9 +200,9 @@ int main(int argc, char **argv)
 
             case 12: /* Load Program. */
             
-            	um_free(m[0]);
-            	{
+            	if (r[b]) {
             		uint i;
+	            	um_free(m[0]);
             		um_arr *a = m[ r[b] ];
 	            	m[0] = um_uicalloc(a->len);
 
@@ -210,7 +210,7 @@ int main(int argc, char **argv)
 	            		m[0]->a[i] = a->a[i];
 	            	}
 	            }
-				finger = r[c];	/* XXX: should this be just c? */
+				finger = r[c];
 
                 break;
 
