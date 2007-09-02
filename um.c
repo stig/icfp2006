@@ -6,6 +6,10 @@
 /* types */
 typedef unsigned int uint;
 
+/* registers we deal with */
+enum _regs { A = 0, B, C };
+
+
 /* operators are found in the high nibble */
 #define um_op(n) (n >> 28)
 
@@ -18,6 +22,19 @@ typedef unsigned int uint;
 #define um_op13_seg(n) ((n & 0xe000000) >> 25)      /* segment A*/
 #define um_op13_val(n) (n & 0x1ffffff)              /* value */
 
+uint **um_puirealloc(uint **p, size_t *old, size_t new)
+{
+	int i;
+	p = realloc(p, new);
+	assert(p != NULL);
+	
+	/* init new pointers to NULL */
+	for (i = 0; (*old + i) < new; i++)
+		p[ *old + i ] = NULL;
+
+	*old = new;
+	return p;
+}
 
 uint *um_uicalloc(size_t size)
 {
@@ -62,15 +79,20 @@ uint *um_read_scroll(char *name)
 int main(int argc, char **argv)
 {
     uint r[8] = { 0 };
-    uint *m[16] = { NULL };
+    size_t mlen = 0;
+    uint **m = um_puirealloc(NULL, &mlen, 5);
     uint finger = 0;
-
+	
 	m[0] = um_read_scroll(argv[1]);
 
-#if 0
     for (;;) {
-    	int op;
-        switch (op = um_op(XXX)) {
+    	uint *p = &m[0][finger];
+    	uint a = um_seg_a(*p);
+    	uint b = um_seg_b(*p);
+    	uint c = um_seg_c(*p);
+    	uint op = um_op(*p);
+        switch (op) {
+#if 0
             case 0: /* Conditional Move. */
 
                 break;
@@ -98,12 +120,14 @@ int main(int argc, char **argv)
             case 6: /* Not-And. */
 
                 break;
-
+#endif
             case 7: /* Halt. */
 
+				puts("Exiting");
                 exit(0);
                 break;
 
+#if 0
             case 8: /* Allocation. */
 
                 break;
@@ -127,14 +151,14 @@ int main(int argc, char **argv)
             case 13: /* Orthography. */
 
                 break;
-                
+ #endif                
             default:
             	fprintf(stderr, "illegal operator encounted: '%u'\n", op);
             	exit(EXIT_FAILURE);
             	break;
-		
+		}
+		finger++;
     }
-#endif
 
 	return 0;
 }
@@ -143,7 +167,13 @@ int main(int argc, char **argv)
 
 int main(void)
 {
-   	assert(um_op(0xf0000000) == 15);
+	size_t mlen = 0;
+	uint **m = um_puirealloc(NULL, &mlen, 5);
+ 	assert(m[0] == NULL);
+	assert(m[4] == NULL);
+	assert(mlen == 5);
+	
+ 	assert(um_op(0xf0000000) == 15);
    	assert(um_seg_c(0xffffffff) == 7);
     assert(um_seg_b(0xffffffff) == 7);
     assert(um_seg_a(0xffffffff) == 7);
