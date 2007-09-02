@@ -223,7 +223,17 @@ int main(int argc, char **argv)
                 break;
 
             case 11: /* Input. */
-                puts("Input unhandled");
+                {
+                    int c = getchar();
+                    if (c == EOF) {
+                        *C = ~0;
+                    }
+                    else {
+                        assert(c >= 0);
+                        assert(c <= 255);
+                        *C = c;
+                    }
+                }
                 break;
 
             case 12: /* Load Program. */
