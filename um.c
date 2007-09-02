@@ -22,9 +22,9 @@ typedef struct {
 #define um_op(n) (n >> 28)
 
 /* extract segment values */
-#define um_seg_c(n) (n & 07)                        /* segment C */
-#define um_seg_b(n) ((n & 070) >> 3)                /* segment B */
-#define um_seg_a(n) ((n & 0700) >> 6)               /* segment A */
+#define um_seg_c(n) (n & 07)       		/* segment C */
+#define um_seg_b(n) ((n >> 3) & 07) 	/* segment B */
+#define um_seg_a(n) ((n >> 6) & 07)     /* segment A */
 
 /* op 13 is different from the others */
 #define um_op13_seg(n) ((n & 0xe000000) >> 25)      /* segment A */
@@ -53,7 +53,6 @@ um_arr **um_ppuirealloc(um_arr **p, size_t *old, size_t new)
 	um_arr *arr = malloc(sizeof(um_arr));
 	assert(arr != NULL);
 
-	
 	arr->a = calloc(size, sizeof(uint));
 	assert(arr->a != NULL);
 
@@ -102,6 +101,7 @@ um_arr *um_read_scroll(char *name)
 			arr->a[ i / 4 ] <<= 8;
 			arr->a[ i / 4 ] += c;
 		}
+
 		/* make sure the last int is shifted correctly */
 		arr->a[ i / 4] <<= (i % 4) * 8;
 //		printf("i: %u, len: %u\n", i, len);
@@ -237,7 +237,7 @@ int main(int argc, char **argv)
 				finger = *C;
                 break;
 
-            case 13: /* Orthography. */
+            case 13: /* Orthography. (SET) */
 				r[ um_op13_seg(p) ] = um_op13_val(p);
                 break;
 
