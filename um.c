@@ -43,20 +43,6 @@ static inline um_freelist *um_freelist_push(um_freelist *p, um_uint n)
     return l;
 }
 
-/* allocates room for more platter arrays */
-static void um_ppuirealloc(struct um *p, size_t size)
-{
-    p->parr = realloc(p->parr, size * sizeof(um_uint));
-    assert(p != NULL);
-    
-    /* init new pointers to NULL */
-    memset(p->parr + p->len, 0, size - p->len);
-
-//    fprintf(stderr, "allocating parent array of size: 0x%x\n", (um_uint)size);
-    /* update the count of elements */
-    p->len = size;
-}
-
 /* creates a platter array of the given size */
 static inline um_array *um_mkarray(size_t size)
 {
@@ -173,8 +159,10 @@ static int um_run(struct um *um)
                         free(l);
                     }
                     else {
-                        if (++um->next == um->len)
-                            um_ppuirealloc(um, um->len * 2);
+                        if (++um->next == um->len) {
+                            um->len *= 2;
+                            um->parr = realloc(um->parr, um->len * sizeof(um_uint));
+                        }
                         idx = um->next;
                     }
                     um->parr[ idx ] = um_mkarray( REGC );
@@ -222,12 +210,13 @@ static int um_run(struct um *um)
     }
 }
 
-
 int main(int argc, char **argv)
 {
     struct um um = { 0 };
     
-    um_ppuirealloc(&um, 1);
+    um.len = 128;   /* preallocate some memory */
+    um.parr = calloc(sizeof(um_uint), um.len);
+
     um.parr[0] = um_read_scroll(argv[1]);
     if (!um_run(&um))
         return 0;
