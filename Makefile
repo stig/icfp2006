@@ -1,4 +1,4 @@
-CFLAGS := -O3 -DNDEBUG -pg # -ansi -pedantic
+CFLAGS := -O3 -DNDEBUG # -pg -ansi -pedantic
 
 ALL: um
 

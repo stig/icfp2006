@@ -3,8 +3,9 @@
 #include <assert.h>
 #include <limits.h>
 
-/* types */
-typedef unsigned int uint;
+#include <stdint.h>
+
+typedef uint_fast32_t um_uint;
 
 /* opcodes */
 char *ops[] = {	
@@ -15,7 +16,7 @@ char *ops[] = {
 /* we need to store lengths of collections */
 typedef struct {
 	size_t len;
-	uint *a;
+	um_uint *a;
 } um_arr;
 
 #define mod(n) (n & 0xffffffff)
@@ -55,7 +56,7 @@ um_arr **um_ppuirealloc(um_arr **p, size_t *old, size_t new)
 	um_arr *arr = malloc(sizeof(um_arr));
 	assert(arr != NULL);
 
-	arr->a = calloc(size, sizeof(uint));
+	arr->a = calloc(size, sizeof(um_uint));
 	assert(arr->a != NULL);
 
 	arr->len = size;	
@@ -70,7 +71,7 @@ void um_free(um_arr *p)
 	free(p);
 }
 
-void um_out(uint c)
+void um_out(um_uint c)
 {
 	assert(c <= 255);
 	putchar(c);
@@ -114,10 +115,10 @@ um_arr *um_read_scroll(char *name)
 
 #define dbg(a) um_seg_##a(p), r[um_seg_##a(p)]
 
-void debug( uint p, uint *r, uint finger)
+void debug( um_uint p, um_uint *r, um_uint finger)
 {
 	int i, n;
-	uint op = um_op(p);
+	um_uint op = um_op(p);
   	fprintf(stderr, "%x: %s %n", finger, ops[op], &n);
 	if (op == 13)
 		fprintf(stderr, "reg: %u, val: %x%n", um_op13_seg(p), um_op13_val(p), &i);
@@ -138,21 +139,21 @@ void debug( uint p, uint *r, uint finger)
 
 int main(int argc, char **argv)
 {
-    uint r[8] = { 0 };
+    um_uint r[8] = { 0 };
     size_t mlen = 0;
     um_arr **m = um_ppuirealloc(NULL, &mlen, 1);
-    uint finger = 0;
+    um_uint finger = 0;
 	
 	m[0] = um_read_scroll(argv[1]);
 
     for (;;) {
 		assert(finger < m[0]->len);
-    	uint p = m[0]->a[finger++];
+    	um_uint p = m[0]->a[finger++];
  //   	debug(p, r, finger - 1);
-    	uint *A = r + um_seg_a(p);
-    	uint *B = r + um_seg_b(p);
-    	uint *C = r + um_seg_c(p);
-    	uint op = um_op(p);
+    	um_uint *A = r + um_seg_a(p);
+    	um_uint *B = r + um_seg_b(p);
+    	um_uint *C = r + um_seg_c(p);
+    	um_uint op = um_op(p);
 //    	fprintf(stderr, "%s\n", ops[op]);
         switch (op) {
         
@@ -186,7 +187,7 @@ int main(int argc, char **argv)
 
             case 5: /* Division. */
 				assert(*C);	/* don't devide by zero */
-				*A = (uint)*B / (uint)*C;
+				*A = (um_uint)*B / (um_uint)*C;
                 break;
 
             case 6: /* Not-And. */
@@ -199,7 +200,7 @@ int main(int argc, char **argv)
 
             case 8: /* Allocation. */
             	{
-            		uint i;
+            		um_uint i;
             		for (i = 0; i < mlen; i++)
             			if (!m[i])
             				break;
@@ -227,7 +228,7 @@ int main(int argc, char **argv)
 
             case 12: /* Load Program. */
             	if (*B) {
-            		uint i;
+            		um_uint i;
 	            	um_free(m[0]);
             		um_arr *a = m[ *B ];
 	            	m[0] = um_uicalloc(a->len);
