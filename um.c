@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 /* I need a fast, unsigned, 32-bit integer type. 
    C99's got just the thing. */
@@ -42,9 +43,7 @@ um_arr **um_ppuirealloc(um_arr **p, size_t *old, size_t new)
     assert(p != NULL);
     
     /* init new pointers to NULL */
-    for (i = 0; (*old + i) < new; i++) {
-        p[ *old + i ] = NULL;
-    }
+    memset(p + *old, 0, new - *old);
 
     /* update the passed-in count of elements */
     *old = new;
@@ -237,14 +236,10 @@ int main(int argc, char **argv)
 
             case 12: /* Load Program. */
                 if (REGB) {
-                    um_uint i;
                     um_free(m[0]);
                     um_arr *a = m[ REGB ];
                     m[0] = um_uicalloc(a->len);
-
-                    for (i = 0; i < a->len; i++) {
-                        m[0]->a[i] = a->a[i];
-                    }
+                    memmove(m[0]->a, a->a, a->len * sizeof(um_uint));
                 }
                 finger = REGC;
                 break;
