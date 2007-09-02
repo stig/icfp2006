@@ -12,7 +12,6 @@ typedef struct _um_arr {
 	uint *a;
 } um_arr;
 
-
 #define nand(a, b) (~(a) | ~(b))
 #define mod(n) ((n) % 0xffffffff)
 
@@ -46,7 +45,7 @@ um_arr **um_ppuirealloc(um_arr **p, size_t *old, size_t new)
 	return p;
 }
 
-um_arr *um_uicalloc(size_t size)
+ um_arr *um_uicalloc(size_t size)
 {
 	um_arr *arr = malloc(sizeof(um_arr));
 	assert(arr != NULL);
@@ -61,8 +60,8 @@ um_arr *um_uicalloc(size_t size)
 
 void um_free(um_arr *p)
 {
-	assert(p);
-	assert(p->a);
+	assert(p != NULL);
+	assert(p->a != NULL);
 	free(p->a);
 	free(p);
 }
@@ -180,8 +179,20 @@ int main(int argc, char **argv)
                 break;
 
             case 8: /* Allocation. */
-
-				puts("Allocation unhandled");
+            
+            	{
+            		uint i;
+            		for (i = 0; i < mlen; i++)
+            			if (!m[i])
+            				break;
+            		
+            		if (i >= mlen) {
+            			i = mlen;
+            			m = um_ppuirealloc(m, &mlen, mlen * 2);
+            		}
+            		m[i] = um_uicalloc( r[c] );
+            		r[b] = i;
+            	}
                 break;
 
             case 9: /* Abandonment. */
