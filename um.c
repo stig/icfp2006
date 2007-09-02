@@ -114,12 +114,13 @@ int main(int argc, char **argv)
     uint r[8] = { 0 };
     size_t mlen = 0;
     um_arr **m = um_ppuirealloc(NULL, &mlen, 5);
-    uint finger = 0;
+    uint finger;
 	
 	m[0] = um_read_scroll(argv[1]);
 
-    for (;;) {
+    for (finger = 0; ; finger++) {
 		assert(finger < m[0]->len);
+		
     	uint p = m[0]->a[finger];
     	uint a = um_seg_a(p);
     	uint b = um_seg_b(p);
@@ -135,18 +136,18 @@ int main(int argc, char **argv)
 
             case 1: /* Array Index. */
 
-				assert(b < mlen);
-				assert(m[b] != NULL);
-				assert(m[b]->len > r[c]);
+				assert(r[b] < mlen);
+				assert(m[ r[b] ] != NULL);
+				assert(m[ r[b] ]->len > r[c]);
 				
 				r[a] = m[ r[b] ]->a[ r[c] ];
                 break;
 
             case 2: /* Array Amendment. */
 
-				assert(a < mlen);
-				assert(m[a] != NULL);
-				assert(m[a]->len > r[b]);
+				assert(r[a] < mlen);
+				assert(m[ r[a] ] != NULL);
+				assert(m[ r[a] ]->len > r[b]);
 				
 				m[ r[a] ]->a[ r[b] ] = r[c];
                 break;
@@ -210,7 +211,7 @@ int main(int argc, char **argv)
 	            		m[0]->a[i] = a->a[i];
 	            	}
 	            }
-				finger = r[c];
+				finger = r[c] - 1;
 
                 break;
 
@@ -224,7 +225,6 @@ int main(int argc, char **argv)
             	exit(EXIT_FAILURE);
             	break;
 		}
-		finger++;
     }
 
 	return 0;
