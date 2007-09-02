@@ -25,7 +25,7 @@ typedef struct _um_arr {
 #define um_seg_a(n) ((n & 0700) >> 6)               /* segment A */
 
 /* op 13 is different from the others */
-#define um_op13_seg(n) ((n & 0xe000000) >> 25)      /* segment A*/
+#define um_op13_seg(n) ((n & 0xe000000) >> 25)      /* segment A */
 #define um_op13_val(n) (n & 0x1ffffff)              /* value */
 
 /* A bit like realloc, but when _increasing_ the array, 
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
     	uint b = um_seg_b(p);
     	uint c = um_seg_c(p);
     	uint op = um_op(p);
-//        printf("op: %u, a: %u, b: %u, c: %u\n", op, a, b, c);
+        printf("code: %x (op: %u, a: %u, b: %u, c: %u)\n", p, op, a, b, c);
         switch (op) {
             case 0: /* Conditional Move. */
 
@@ -180,6 +180,7 @@ int main(int argc, char **argv)
 
             case 8: /* Allocation. */
 
+				puts("Allocation unhandled");
                 break;
 
             case 9: /* Abandonment. */
@@ -194,14 +195,28 @@ int main(int argc, char **argv)
 
             case 11: /* Input. */
 
+				puts("Input unhandled");
                 break;
 
             case 12: /* Load Program. */
+            
+            	um_free(m[0]);
+            	{
+            		uint i;
+            		um_arr *a = m[ r[b] ];
+	            	m[0] = um_uicalloc(a->len);
+
+	            	for (i = 0; i < a->len; i++) {
+	            		m[0]->a[i] = a->a[i];
+	            	}
+	            }
+				finger = r[c];	/* XXX: should this be just c? */
 
                 break;
 
             case 13: /* Orthography. */
 
+				r[ um_op13_seg(p) ] = um_op13_val(p);
                 break;
 
             default:
