@@ -59,6 +59,20 @@ um_arr *um_uicalloc(size_t size)
 	return arr;
 }
 
+void um_free(um_arr *p)
+{
+	assert(p);
+	assert(p->a);
+	free(p->a);
+	free(p);
+}
+
+void um_out(uint c)
+{
+	assert(c <= 255);
+	putchar(c);
+}
+
 um_arr *um_read_scroll(char *name)
 {
 	um_arr *arr;
@@ -170,10 +184,12 @@ int main(int argc, char **argv)
 
             case 9: /* Abandonment. */
 
+				um_free(m[c]);
                 break;
 
             case 10: /* Output. */
 
+				um_out(r[c]);
                 break;
 
             case 11: /* Input. */
