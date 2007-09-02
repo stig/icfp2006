@@ -186,7 +186,7 @@ int main(int argc, char **argv)
                 break;
 
             case 5: /* Division. */
-                assert(REGC); /* don't devide by zero */
+                assert(REGC);
                 REGA = REGB / REGC;
                 break;
 
@@ -204,9 +204,8 @@ int main(int argc, char **argv)
                     for (i = 0; i < mlen; i++)
                         if (!m[i])
                             break;
-                    if (i == mlen) {
+                    if (i == mlen)
                         m = um_ppuirealloc(m, &mlen, mlen * 2);
-                    }
                     assert(m[i] == NULL);
                     m[i] = um_uicalloc( REGC );
                     REGB = i;
