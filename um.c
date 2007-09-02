@@ -13,6 +13,8 @@ typedef struct _um_arr {
 } um_arr;
 
 
+#define mod(n) ((n) % 0xffffffff)
+
 /* operators are found in the high nibble */
 #define um_op(n) (n >> 28)
 
@@ -86,8 +88,7 @@ um_arr *um_read_scroll(char *name)
 		assert(len == i);
 	}
 	return arr;
-}		
-		
+}
 		
 #if !UM_TEST
 int main(int argc, char **argv)
@@ -110,30 +111,50 @@ int main(int argc, char **argv)
         switch (op) {
             case 0: /* Conditional Move. */
 
+				if (r[c]) {
+					r[a] = r[b];
+				}
                 break;
 
             case 1: /* Array Index. */
 
+				assert(b < mlen);
+				assert(m[b] != NULL);
+				assert(m[b]->len > r[c]);
+				
+				/* XXX: should 'b' be 'r[a]' instead? */
+				r[a] = m[b]->a[ r[c] ];
                 break;
 
             case 2: /* Array Amendment. */
 
+				assert(a < mlen);
+				assert(m[a] != NULL);
+				assert(m[a]->len > r[b]);
+				
+				/* XXX: should 'a' be 'r[a]' instead? */
+				m[a]->a[ r[b] ] = r[c];
                 break;
 
             case 3: /* Addition. */
-
+				
+				r[a] = mod(r[b] + r[c]);
                 break;
 
             case 4: /* Multiplication. */
 
+				r[a] = mod(r[b] * r[c]);
                 break;
 
             case 5: /* Division. */
 
+				assert(r[c]);	/* don't devide by zero */
+				r[a] = (uint)r[b] / (uint)r[c];
                 break;
 
             case 6: /* Not-And. */
 
+				
                 break;
 
             case 7: /* Halt. */
