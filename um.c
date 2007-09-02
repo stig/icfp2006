@@ -13,6 +13,7 @@ typedef struct _um_arr {
 } um_arr;
 
 
+#define nand(a, b) (~(a) | ~(b))
 #define mod(n) ((n) % 0xffffffff)
 
 /* operators are found in the high nibble */
@@ -84,7 +85,7 @@ um_arr *um_read_scroll(char *name)
 			assert(c >= 0);
 			arr->a[ i / 4 ] += c >> (3 - i % 4);
 		}
-		printf("i: %u, len: %u\n", i, len);
+//		printf("i: %u, len: %u\n", i, len);
 		assert(len == i);
 	}
 	return arr;
@@ -107,7 +108,7 @@ int main(int argc, char **argv)
     	uint b = um_seg_b(p);
     	uint c = um_seg_c(p);
     	uint op = um_op(p);
-        printf("op: %u, a: %u, b: %u, c: %u\n", op, a, b, c);
+//        printf("op: %u, a: %u, b: %u, c: %u\n", op, a, b, c);
         switch (op) {
             case 0: /* Conditional Move. */
 
@@ -154,7 +155,7 @@ int main(int argc, char **argv)
 
             case 6: /* Not-And. */
 
-				
+				r[a] = ~(r[b] | r[c]);
                 break;
 
             case 7: /* Halt. */
@@ -214,6 +215,8 @@ int main(void)
     assert(um_seg_a(0xffffffff) == 7);
     assert(um_op13_seg(0xffffffff) == 7);
     assert(um_op13_val(0xffffffff) == 33554431);
+	assert(nand(0xfffffffa, 0xfffffff9) == 7);
+	
 	puts("all ok");
     return 0;
 }
