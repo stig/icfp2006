@@ -112,15 +112,15 @@ int main(int argc, char **argv)
 {
     uint r[8] = { 0 };
     size_t mlen = 0;
-    um_arr **m = um_ppuirealloc(NULL, &mlen, 5);
-    uint finger;
+    um_arr **m = um_ppuirealloc(NULL, &mlen, 1);
+    uint finger = 0;
 	
 	m[0] = um_read_scroll(argv[1]);
 
-    for (finger = 0; ; finger++) {
+    for (;;) {
 		assert(finger < m[0]->len);
 		
-    	uint p = m[0]->a[finger];
+    	uint p = m[0]->a[finger++];
     	uint a = um_seg_a(p);
     	uint b = um_seg_b(p);
     	uint c = um_seg_c(p);
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 	            		m[0]->a[i] = a->a[i];
 	            	}
 	            }
-				finger = r[c] - 1;
+				finger = r[c];
 
                 break;
 
