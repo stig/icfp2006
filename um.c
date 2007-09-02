@@ -69,64 +69,70 @@ int main(int argc, char **argv)
 
 #if 0
     for (;;) {
-        switch (um_op(XXX)) {
+    	int op;
+        switch (op = um_op(XXX)) {
             case 0: /* Conditional Move. */
 
-                  break;
+                break;
 
             case 1: /* Array Index. */
 
-                  break;
+                break;
 
             case 2: /* Array Amendment. */
 
-                  break;
+                break;
 
             case 3: /* Addition. */
 
-                  break;
+                break;
 
             case 4: /* Multiplication. */
 
-                  break;
+                break;
 
             case 5: /* Division. */
 
-                  break;
+                break;
 
             case 6: /* Not-And. */
 
-                  break;
+                break;
 
             case 7: /* Halt. */
 
-                  exit(0);
-                  break;
+                exit(0);
+                break;
 
             case 8: /* Allocation. */
 
-                  break;
+                break;
 
             case 9: /* Abandonment. */
 
-                  break;
+                break;
 
-           case 10: /* Output. */
+            case 10: /* Output. */
 
-                  break;
+                break;
 
-           case 11: /* Input. */
+            case 11: /* Input. */
 
-                  break;
+                break;
 
-           case 12: /* Load Program. */
+            case 12: /* Load Program. */
 
-                  break;
+                break;
 
-           case 13: /* Orthography. */
+            case 13: /* Orthography. */
 
-                  break;
-
+                break;
+                
+            default:
+            	fprintf(stderr, "illegal operator encounted: '%u'\n", op);
+            	exit(EXIT_FAILURE);
+            	break;
+		
     }
 #endif
 
