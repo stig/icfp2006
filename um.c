@@ -1,17 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <limits.h>
 
+/* I need a fast, unsigned, 32-bit integer type. 
+   C99's got just the thing. */
 #include <stdint.h>
-
 typedef uint_fast32_t um_uint;
 
-/* opcodes */
-char *ops[] = { 
-    "COND", "INDEX", "AMEND", "ADD", "MUL", "DIV", "NAND", "HALT",
-    "ALLOC", "FREE", "PRINT", "READ", "LOAD", "SET",
-};
 
 /* we need to store lengths of collections */
 typedef struct {
@@ -19,7 +14,6 @@ typedef struct {
     um_uint *a;
 } um_arr;
 
-#define mod(n) (n & 0xffffffff)
 
 /* operators are found in the high nibble */
 #define um_op(n) (n >> 28)
@@ -123,6 +117,11 @@ um_arr *um_read_scroll(char *name)
 
 void debug( um_uint p, um_uint *r, um_uint finger)
 {
+    char *ops[] = { 
+        "COND", "INDEX", "AMEND", "ADD", "MUL", "DIV", "NAND", "HALT",
+        "ALLOC", "FREE", "PRINT", "READ", "LOAD", "SET",
+    };
+
     int i, n;
     um_uint op = um_op(p);
     fprintf(stderr, "%x: %s %n", finger, ops[op], &n);
@@ -179,16 +178,16 @@ int main(int argc, char **argv)
                 break;
 
             case 3: /* Addition. */
-                REGA = mod(REGB + REGC);
+                REGA = REGB + REGC;
                 break;
 
             case 4: /* Multiplication. */
-                REGA = mod(REGB * REGC);
+                REGA = REGB * REGC;
                 break;
 
             case 5: /* Division. */
                 assert(REGC); /* don't devide by zero */
-                REGA = (um_uint)REGB / (um_uint)REGC;
+                REGA = REGB / REGC;
                 break;
 
             case 6: /* Not-And. */
