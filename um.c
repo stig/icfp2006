@@ -198,8 +198,8 @@ int main(int argc, char **argv)
 
             case 9: /* Abandonment. */
 
-				um_free(m[c]);
-				m[c] = NULL;
+				um_free(m[ r[c] ]);
+				m[ r[c] ] = NULL;
                 break;
 
             case 10: /* Output. */
