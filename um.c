@@ -121,55 +121,55 @@ int main(int argc, char **argv)
 		assert(finger < m[0]->len);
 		
     	uint p = m[0]->a[finger++];
-    	uint a = um_seg_a(p);
-    	uint b = um_seg_b(p);
-    	uint c = um_seg_c(p);
+    	uint *A = r + um_seg_a(p);
+    	uint *B = r + um_seg_b(p);
+    	uint *C = r + um_seg_c(p);
     	uint op = um_op(p);
         switch (op) {
             case 0: /* Conditional Move. */
 
-				if (r[c]) {
-					r[a] = r[b];
+				if (*C) {
+					*A = *B;
 				}
                 break;
 
             case 1: /* Array Index. */
 
-				assert(r[b] < mlen);
-				assert(m[ r[b] ] != NULL);
-				assert(m[ r[b] ]->len > r[c]);
+				assert(*B < mlen);
+				assert(m[ *B ] != NULL);
+				assert(m[ *B ]->len > *C);
 				
-				r[a] = m[ r[b] ]->a[ r[c] ];
+				*A = m[ *B ]->a[ *C ];
                 break;
 
             case 2: /* Array Amendment. */
 
-				assert(r[a] < mlen);
-				assert(m[ r[a] ] != NULL);
-				assert(m[ r[a] ]->len > r[b]);
+				assert(*A < mlen);
+				assert(m[ *A ] != NULL);
+				assert(m[ *A ]->len > *B);
 				
-				m[ r[a] ]->a[ r[b] ] = r[c];
+				m[ *A ]->a[ *B ] = *C;
                 break;
 
             case 3: /* Addition. */
 				
-				r[a] = mod(r[b] + r[c]);
+				*A = mod(*B + *C);
                 break;
 
             case 4: /* Multiplication. */
 
-				r[a] = mod(r[b] * r[c]);
+				*A = mod(*B * *C);
                 break;
 
             case 5: /* Division. */
 
-				assert(r[c]);	/* don't devide by zero */
-				r[a] = (uint)r[b] / (uint)r[c];
+				assert(*C);	/* don't devide by zero */
+				*A = (uint)*B / (uint)*C;
                 break;
 
             case 6: /* Not-And. */
 
-				r[a] = nand(r[b], r[c]);
+				*A = nand(*B, *C);
                 break;
 
             case 7: /* Halt. */
@@ -191,20 +191,20 @@ int main(int argc, char **argv)
             		}
             		
             		assert(m[i] == NULL);
-            		m[i] = um_uicalloc( r[c] );
-            		r[b] = i;
+            		m[i] = um_uicalloc( *C );
+            		*B = i;
             	}
                 break;
 
             case 9: /* Abandonment. */
 
-				um_free(m[ r[c] ]);
-				m[ r[c] ] = NULL;
+				um_free(m[ *C ]);
+				m[ *C ] = NULL;
                 break;
 
             case 10: /* Output. */
 
-				um_out(r[c]);
+				um_out(*C);
                 break;
 
             case 11: /* Input. */
@@ -214,17 +214,17 @@ int main(int argc, char **argv)
 
             case 12: /* Load Program. */
             
-            	if (r[b]) {
+            	if (*B) {
             		uint i;
 	            	um_free(m[0]);
-            		um_arr *a = m[ r[b] ];
+            		um_arr *a = m[ *B ];
 	            	m[0] = um_uicalloc(a->len);
 
 	            	for (i = 0; i < a->len; i++) {
 	            		m[0]->a[i] = a->a[i];
 	            	}
 	            }
-				finger = r[c];
+				finger = *C;
 
                 break;
 
