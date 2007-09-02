@@ -185,11 +185,12 @@ int main(int argc, char **argv)
             		for (i = 0; i < mlen; i++)
             			if (!m[i])
             				break;
-            		
-            		if (i >= mlen) {
-            			i = mlen;
+
+            		if (i == mlen) {
             			m = um_ppuirealloc(m, &mlen, mlen * 2);
             		}
+            		
+            		assert(m[i] == NULL);
             		m[i] = um_uicalloc( r[c] );
             		r[b] = i;
             	}
@@ -198,6 +199,7 @@ int main(int argc, char **argv)
             case 9: /* Abandonment. */
 
 				um_free(m[c]);
+				m[c] = NULL;
                 break;
 
             case 10: /* Output. */
