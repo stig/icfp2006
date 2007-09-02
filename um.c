@@ -18,6 +18,8 @@ typedef struct {
 	uint *a;
 } um_arr;
 
+#define mod(n) (n & 0xffffffff)
+
 /* operators are found in the high nibble */
 #define um_op(n) (n >> 28)
 
