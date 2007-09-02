@@ -206,14 +206,7 @@ int main(int argc, char **argv)
             case 11: /* Input. */
                 {
                     int c = getchar();
-                    if (c == EOF) {
-                        REGC = ~0;
-                    }
-                    else {
-                        assert(c >= 0);
-                        assert(c <= 255);
-                        REGC = c;
-                    }
+                    REGC = c == EOF ? ~0 : c;
                 }
                 break;
 
@@ -221,7 +214,9 @@ int main(int argc, char **argv)
                 if (REGB) {
                     free(um.parr[0]);
                     um.parr[0] = um_mkarray( um.parr[ REGB ]->len );
-                    memmove(um.parr[0]->content, um.parr[ REGB ]->content, um.parr[ REGB ]->len * sizeof(um_uint));
+                    memmove(um.parr[ 0 ],
+                            um.parr[ REGB ],
+                            um.parr[ REGB ]->len * sizeof(um_uint) + sizeof(um_array));
                 }
                 um.pc = REGC;
                 break;
