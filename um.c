@@ -7,14 +7,17 @@
    C99's got just the thing. */
 #include <stdint.h>
 typedef uint_fast32_t um_uint;
-
-
-/* we need to store lengths of collections */
 typedef struct {
     size_t len;
-    um_uint *a;
-} um_arr;
+    um_uint content[];
+} um_array;
 
+/* we need to store lengths of collections */
+struct um {
+    size_t pc, len;
+    um_uint reg[8];
+    um_array **parr;
+};
 
 /* operators are found in the high nibble */
 #define um_op(n) (n >> 28)
@@ -24,9 +27,9 @@ typedef struct {
 #define SEGB(n) ((n >> 3) & 07)     /* segment B */
 #define SEGA(n) ((n >> 6) & 07)     /* segment A */
 
-#define REGA r[SEGA(p)]
-#define REGB r[SEGB(p)]
-#define REGC r[SEGC(p)]
+#define REGA um.reg[SEGA(p)]
+#define REGB um.reg[SEGB(p)]
+#define REGC um.reg[SEGC(p)]
 
 /* op 13 is different from the others */
 #define OP13SEG(n) ((n & 0xe000000) >> 25)      /* segment A */
@@ -34,40 +37,24 @@ typedef struct {
 
 
 
-/* A bit like realloc, but when _increasing_ the array, 
-   initialize new pointers to NULL. */
-um_arr **um_ppuirealloc(um_arr **p, size_t *old, size_t new)
+/* allocate room for more platter arrays */
+void um_ppuirealloc(struct um *p, size_t size)
 {
-    int i;
-    p = realloc(p, new * sizeof(um_arr));
+    p->parr = realloc(p->parr, size * sizeof(um_uint));
     assert(p != NULL);
     
     /* init new pointers to NULL */
-    memset(p + *old, 0, new - *old);
+    memset(p->parr + p->len, 0, size - p->len);
 
-    /* update the passed-in count of elements */
-    *old = new;
+    /* update the count of elements */
+    p->len = size;
+}
+
+um_array *um_mkarray(size_t size)
+{
+    um_array *p = calloc(size * sizeof(um_uint) + sizeof(um_array), 1);
+    p->len = size;
     return p;
-}
-
- um_arr *um_uicalloc(size_t size)
-{
-    um_arr *arr = malloc(sizeof(um_arr));
-    assert(arr != NULL);
-
-    arr->a = calloc(size, sizeof(um_uint));
-    assert(arr->a != NULL);
-
-    arr->len = size;    
-    return arr;
-}
-
-void um_free(um_arr *p)
-{
-    assert(p != NULL);
-    assert(p->a != NULL);
-    free(p->a);
-    free(p);
 }
 
 void um_out(um_uint c)
@@ -76,9 +63,9 @@ void um_out(um_uint c)
     putchar(c);
 }
 
-um_arr *um_read_scroll(char *name)
+um_array *um_read_scroll(char *name)
 {
-    um_arr *arr;
+    um_array *arr;
     assert(name != NULL);
     assert(*name);      /* non-empty string */
     
@@ -92,7 +79,7 @@ um_arr *um_read_scroll(char *name)
             ;
     
         /* allocate array of ints big enough */
-        arr = um_uicalloc(len / 4 + 1);
+        arr = um_mkarray(len / 4 + 1);
         
         rewind(fp);
         
@@ -100,17 +87,19 @@ um_arr *um_read_scroll(char *name)
         for (i = 0; (c = getc(fp)) != EOF; i++) {
             assert(c <= 255);
             assert(c >= 0);
-            arr->a[ i / 4 ] <<= 8;
-            arr->a[ i / 4 ] += c;
+            arr->content[ i / 4 ] <<= 8;
+            arr->content[ i / 4 ] += c;
         }
 
         /* make sure the last int is shifted correctly */
-        arr->a[ i / 4] <<= (i % 4) * 8;
+        arr->content[ i / 4] <<= (i % 4) * 8;
 //      printf("i: %u, len: %u\n", i, len);
         assert(len == i);
     }
     return arr;
 }
+
+#if 0
 
 #define dbg(X) SEG##X(p), r[SEG##X(p)]
 
@@ -141,18 +130,17 @@ void debug( um_uint p, um_uint *r, um_uint finger)
     fputc('\n', stderr);
 }
 
+#endif
+
 int main(int argc, char **argv)
 {
-    um_uint r[8] = { 0 };
-    size_t mlen = 0;
-    um_arr **m = um_ppuirealloc(NULL, &mlen, 1);
-    um_uint finger = 0;
+    struct um um = { 0 };
     
-    m[0] = um_read_scroll(argv[1]);
+    um_ppuirealloc(&um, 1);
+    um.parr[0] = um_read_scroll(argv[1]);
 
     for (;;) {
-        assert(finger < m[0]->len);
-        um_uint p = m[0]->a[finger++];
+        um_uint p = um.parr[0]->content[um.pc++];
  //     debug(p, r, finger - 1);
         switch (um_op(p)) {
         
@@ -163,17 +151,11 @@ int main(int argc, char **argv)
                 break;
 
             case 1: /* Array Index. */
-                assert(REGB < mlen);
-                assert(m[ REGB ] != NULL);
-                assert(m[ REGB ]->len > REGC);
-                REGA = m[ REGB ]->a[ REGC ];
+                REGA = um.parr[ REGB ]->content[ REGC ];
                 break;
 
             case 2: /* Array Amendment. */
-                assert(REGA < mlen);
-                assert(m[ REGA ] != NULL);
-                assert(m[ REGA ]->len > REGB);
-                m[ REGA ]->a[ REGB ] = REGC;
+                um.parr[ REGA ]->content[ REGB ] = REGC;
                 break;
 
             case 3: /* Addition. */
@@ -200,20 +182,21 @@ int main(int argc, char **argv)
             case 8: /* Allocation. */
                 {
                     um_uint i;
-                    for (i = 0; i < mlen; i++)
-                        if (!m[i])
+                    for (i = 0; i < um.len; i++)
+                        if (!um.parr[i])
                             break;
-                    if (i == mlen)
-                        m = um_ppuirealloc(m, &mlen, mlen * 2);
-                    assert(m[i] == NULL);
-                    m[i] = um_uicalloc( REGC );
+                    if (i == um.len)
+                        um_ppuirealloc(&um, um.len * 2);
+                    assert(um.parr[i] == NULL);
+                    um.parr[i] = um_mkarray( REGC );
                     REGB = i;
                 }
                 break;
 
             case 9: /* Abandonment. */
-                um_free(m[ REGC ]);
-                m[ REGC ] = NULL;
+                assert(um.parr[ REGC ] != NULL);
+                free(um.parr[ REGC ]);
+                um.parr[ REGC ] = NULL;
                 break;
 
             case 10: /* Output. */
@@ -236,16 +219,15 @@ int main(int argc, char **argv)
 
             case 12: /* Load Program. */
                 if (REGB) {
-                    um_free(m[0]);
-                    um_arr *a = m[ REGB ];
-                    m[0] = um_uicalloc(a->len);
-                    memmove(m[0]->a, a->a, a->len * sizeof(um_uint));
+                    free(um.parr[0]);
+                    um.parr[0] = um_mkarray( um.parr[ REGB ]->len );
+                    memmove(um.parr[0]->content, um.parr[ REGB ]->content, um.parr[ REGB ]->len * sizeof(um_uint));
                 }
-                finger = REGC;
+                um.pc = REGC;
                 break;
 
             case 13: /* Orthography. (SET) */
-                r[ OP13SEG(p) ] = OP13VAL(p);
+                um.reg[ OP13SEG(p) ] = OP13VAL(p);
                 break;
 
             default:
