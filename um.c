@@ -25,15 +25,21 @@ typedef struct {
 #define um_op(n) (n >> 28)
 
 /* extract segment values */
-#define um_seg_c(n) (n & 07)            /* segment C */
-#define um_seg_b(n) ((n >> 3) & 07)     /* segment B */
-#define um_seg_a(n) ((n >> 6) & 07)     /* segment A */
+#define SEGC(n) (n & 07)            /* segment REGC */
+#define SEGB(n) ((n >> 3) & 07)     /* segment REGB */
+#define SEGA(n) ((n >> 6) & 07)     /* segment REGA */
+
+#define REGA r[SEGA(p)]
+#define REGB r[SEGB(p)]
+#define REGC r[SEGC(p)]
 
 /* op 13 is different from the others */
-#define um_op13_seg(n) ((n & 0xe000000) >> 25)      /* segment A */
-#define um_op13_val(n) (n & 0x1ffffff)              /* value */
+#define OP13SEG(n) ((n & 0xe000000) >> 25)      /* segment REGA */
+#define OP13VAL(n) (n & 0x1ffffff)              /* value */
 
-/* A bit like realloc, but when _increasing_ the array, 
+
+
+/* REGA bit like realloc, but when _increasing_ the array, 
    initialize new pointers to NULL. */
 um_arr **um_ppuirealloc(um_arr **p, size_t *old, size_t new)
 {
@@ -113,7 +119,7 @@ um_arr *um_read_scroll(char *name)
     return arr;
 }
 
-#define dbg(a) um_seg_##a(p), r[um_seg_##a(p)]
+#define dbg(a) SEG##a(p), r[SEG##a(p)]
 
 void debug( um_uint p, um_uint *r, um_uint finger)
 {
@@ -121,11 +127,11 @@ void debug( um_uint p, um_uint *r, um_uint finger)
     um_uint op = um_op(p);
     fprintf(stderr, "%x: %s %n", finger, ops[op], &n);
     if (op == 13)
-        fprintf(stderr, "reg: %u, val: %x%n", um_op13_seg(p), um_op13_val(p), &i);
+        fprintf(stderr, "reg: %u, val: %x%n", OP13SEG(p), OP13VAL(p), &i);
     else if (op == 10)
-        fprintf(stderr, "'%c' %n", r[um_seg_c(p)] != '\n' ? r[um_seg_c(p)] : '\\', &i);
+        fprintf(stderr, "'%c' %n", REGC != '\n' ? REGC : '\\', &i);
     else
-        fprintf(stderr, "a(%u): %x, b(%u): %x, c(%u): %x%n", dbg(a), dbg(b), dbg(c), &i);
+        fprintf(stderr, "a(%u): %x, b(%u): %x, c(%u): %x%n", dbg(A), dbg(B), dbg(C), &i);
 
     /* make output line up */
     for (i = i + n; i < 45; i++)
@@ -150,48 +156,43 @@ int main(int argc, char **argv)
         assert(finger < m[0]->len);
         um_uint p = m[0]->a[finger++];
  //     debug(p, r, finger - 1);
-        um_uint *A = r + um_seg_a(p);
-        um_uint *B = r + um_seg_b(p);
-        um_uint *C = r + um_seg_c(p);
-        um_uint op = um_op(p);
-//      fprintf(stderr, "%s\n", ops[op]);
-        switch (op) {
+        switch (um_op(p)) {
         
             case 0: /* Conditional Move. */
-                if (*C) {
-                    *A = *B;
+                if (REGC) {
+                    REGA = REGB;
                 }
                 break;
 
             case 1: /* Array Index. */
-                assert(*B < mlen);
-                assert(m[ *B ] != NULL);
-                assert(m[ *B ]->len > *C);
-                *A = m[ *B ]->a[ *C ];
+                assert(REGB < mlen);
+                assert(m[ REGB ] != NULL);
+                assert(m[ REGB ]->len > REGC);
+                REGA = m[ REGB ]->a[ REGC ];
                 break;
 
             case 2: /* Array Amendment. */
-                assert(*A < mlen);
-                assert(m[ *A ] != NULL);
-                assert(m[ *A ]->len > *B);
-                m[ *A ]->a[ *B ] = *C;
+                assert(REGA < mlen);
+                assert(m[ REGA ] != NULL);
+                assert(m[ REGA ]->len > REGB);
+                m[ REGA ]->a[ REGB ] = REGC;
                 break;
 
             case 3: /* Addition. */
-                *A = mod(*B + *C);
+                REGA = mod(REGB + REGC);
                 break;
 
             case 4: /* Multiplication. */
-                *A = mod(*B * *C);
+                REGA = mod(REGB * REGC);
                 break;
 
             case 5: /* Division. */
-                assert(*C); /* don't devide by zero */
-                *A = (um_uint)*B / (um_uint)*C;
+                assert(REGC); /* don't devide by zero */
+                REGA = (um_uint)REGB / (um_uint)REGC;
                 break;
 
             case 6: /* Not-And. */
-                *A = ~(*B & *C);
+                REGA = ~(REGB & REGC);
                 break;
 
             case 7: /* Halt. */
@@ -208,54 +209,54 @@ int main(int argc, char **argv)
                         m = um_ppuirealloc(m, &mlen, mlen * 2);
                     }
                     assert(m[i] == NULL);
-                    m[i] = um_uicalloc( *C );
-                    *B = i;
+                    m[i] = um_uicalloc( REGC );
+                    REGB = i;
                 }
                 break;
 
             case 9: /* Abandonment. */
-                um_free(m[ *C ]);
-                m[ *C ] = NULL;
+                um_free(m[ REGC ]);
+                m[ REGC ] = NULL;
                 break;
 
             case 10: /* Output. */
-                um_out(*C);
+                um_out(REGC);
                 break;
 
             case 11: /* Input. */
                 {
                     int c = getchar();
                     if (c == EOF) {
-                        *C = ~0;
+                        REGC = ~0;
                     }
                     else {
                         assert(c >= 0);
                         assert(c <= 255);
-                        *C = c;
+                        REGC = c;
                     }
                 }
                 break;
 
             case 12: /* Load Program. */
-                if (*B) {
+                if (REGB) {
                     um_uint i;
                     um_free(m[0]);
-                    um_arr *a = m[ *B ];
+                    um_arr *a = m[ REGB ];
                     m[0] = um_uicalloc(a->len);
 
                     for (i = 0; i < a->len; i++) {
                         m[0]->a[i] = a->a[i];
                     }
                 }
-                finger = *C;
+                finger = REGC;
                 break;
 
             case 13: /* Orthography. (SET) */
-                r[ um_op13_seg(p) ] = um_op13_val(p);
+                r[ OP13SEG(p) ] = OP13VAL(p);
                 break;
 
             default:
-                fprintf(stderr, "Illegal operator encounted: '%u'\n", op);
+                fprintf(stderr, "Illegal operator encounted: '%u'\n", um_op(p));
                 exit(EXIT_FAILURE);
                 break;
         }
