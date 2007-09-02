@@ -41,19 +41,24 @@ uint *um_read_scroll(char *name)
 		for (len = 0; EOF != getc(fp); len++)
 			;
 	
+		/* allocate array of ints big enough */
 		arr = um_uicalloc(len / 4 + 1);
 		rewind(fp);
 		
+		/* read bytestream and write into array of ints */
 		for (i = 0; (c = getc(fp)) != EOF; i++) {
+			assert(c <= 255);
+			assert(c >= 0);
 			arr[ i / 4 ] += c >> (3 - i % 4);
 		}
+/*		printf("i: %u, len: %u\n", i, len); */
 		assert(len == i);
 	}
 	return arr;
 }		
 		
 		
-
+#if 1
 int main(int argc, char **argv)
 {
     uint r[8] = { 0 };
@@ -125,8 +130,13 @@ int main(int argc, char **argv)
     }
 #endif
 
+	return 0;
+}
 
+# else
 
+int main(void)
+{
     printf("%u\n", um_op(0xf0000000));
     printf("%u\n", um_seg_c(0xffffffff));
     printf("%u\n", um_seg_b(0xffffffff));
@@ -137,4 +147,4 @@ int main(int argc, char **argv)
     return 0;
 }
 
-
+#endif
