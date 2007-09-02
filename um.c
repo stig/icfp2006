@@ -58,7 +58,7 @@ uint *um_read_scroll(char *name)
 }		
 		
 		
-#if 1
+#if !UM_TEST
 int main(int argc, char **argv)
 {
     uint r[8] = { 0 };
