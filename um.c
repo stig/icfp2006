@@ -119,7 +119,7 @@ um_arr *um_read_scroll(char *name)
     return arr;
 }
 
-#define dbg(a) SEG##a(p), r[SEG##a(p)]
+#define dbg(X) SEG##X(p), r[SEG##X(p)]
 
 void debug( um_uint p, um_uint *r, um_uint finger)
 {
