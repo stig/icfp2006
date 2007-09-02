@@ -6,8 +6,11 @@
 /* types */
 typedef unsigned int uint;
 
-/* registers we deal with */
-enum _regs { A = 0, B, C };
+/* we need to store lengths of collections */
+typedef struct _um_arr {
+	size_t len;
+	uint *a;
+} um_arr;
 
 
 /* operators are found in the high nibble */
@@ -22,30 +25,40 @@ enum _regs { A = 0, B, C };
 #define um_op13_seg(n) ((n & 0xe000000) >> 25)      /* segment A*/
 #define um_op13_val(n) (n & 0x1ffffff)              /* value */
 
-uint **um_puirealloc(uint **p, size_t *old, size_t new)
+/* A bit like realloc, but when _increasing_ the array, 
+   initialize new pointers to NULL. */
+um_arr **um_ppuirealloc(um_arr **p, size_t *old, size_t new)
 {
 	int i;
-	p = realloc(p, new);
+	p = realloc(p, new * sizeof(um_arr));
 	assert(p != NULL);
 	
 	/* init new pointers to NULL */
-	for (i = 0; (*old + i) < new; i++)
+	for (i = 0; (*old + i) < new; i++) {
 		p[ *old + i ] = NULL;
+	}
 
+	/* update the passed-in count of elements */
 	*old = new;
 	return p;
 }
 
-uint *um_uicalloc(size_t size)
+um_arr *um_uicalloc(size_t size)
 {
-	uint *arr = calloc(size, sizeof(uint));
+	um_arr *arr = malloc(sizeof(um_arr));
 	assert(arr != NULL);
+
+	
+	arr->a = calloc(size, sizeof(uint));
+	assert(arr->a != NULL);
+
+	arr->len = size;	
 	return arr;
 }
 
-uint *um_read_scroll(char *name)
+um_arr *um_read_scroll(char *name)
 {
-	uint *arr;
+	um_arr *arr;
 	assert(name != NULL);
 	assert(*name);		/* non-empty string */
 	
@@ -60,15 +73,16 @@ uint *um_read_scroll(char *name)
 	
 		/* allocate array of ints big enough */
 		arr = um_uicalloc(len / 4 + 1);
+		
 		rewind(fp);
 		
 		/* read bytestream and write into array of ints */
 		for (i = 0; (c = getc(fp)) != EOF; i++) {
 			assert(c <= 255);
 			assert(c >= 0);
-			arr[ i / 4 ] += c >> (3 - i % 4);
+			arr->a[ i / 4 ] += c >> (3 - i % 4);
 		}
-/*		printf("i: %u, len: %u\n", i, len); */
+		printf("i: %u, len: %u\n", i, len);
 		assert(len == i);
 	}
 	return arr;
@@ -80,19 +94,20 @@ int main(int argc, char **argv)
 {
     uint r[8] = { 0 };
     size_t mlen = 0;
-    uint **m = um_puirealloc(NULL, &mlen, 5);
+    um_arr **m = um_ppuirealloc(NULL, &mlen, 5);
     uint finger = 0;
 	
 	m[0] = um_read_scroll(argv[1]);
 
     for (;;) {
-    	uint *p = &m[0][finger];
-    	uint a = um_seg_a(*p);
-    	uint b = um_seg_b(*p);
-    	uint c = um_seg_c(*p);
-    	uint op = um_op(*p);
+		assert(finger < m[0]->len);
+    	uint p = m[0]->a[finger];
+    	uint a = um_seg_a(p);
+    	uint b = um_seg_b(p);
+    	uint c = um_seg_c(p);
+    	uint op = um_op(p);
+        printf("op: %u, a: %u, b: %u, c: %u\n", op, a, b, c);
         switch (op) {
-#if 0
             case 0: /* Conditional Move. */
 
                 break;
@@ -120,14 +135,13 @@ int main(int argc, char **argv)
             case 6: /* Not-And. */
 
                 break;
-#endif
+
             case 7: /* Halt. */
 
 				puts("Exiting");
                 exit(0);
                 break;
 
-#if 0
             case 8: /* Allocation. */
 
                 break;
@@ -151,7 +165,7 @@ int main(int argc, char **argv)
             case 13: /* Orthography. */
 
                 break;
- #endif                
+
             default:
             	fprintf(stderr, "illegal operator encounted: '%u'\n", op);
             	exit(EXIT_FAILURE);
@@ -168,7 +182,7 @@ int main(int argc, char **argv)
 int main(void)
 {
 	size_t mlen = 0;
-	uint **m = um_puirealloc(NULL, &mlen, 5);
+	um_arr **m = um_ppuirealloc(NULL, &mlen, 5);
  	assert(m[0] == NULL);
 	assert(m[4] == NULL);
 	assert(mlen == 5);
