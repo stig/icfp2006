@@ -176,6 +176,9 @@ int main(int argc, char **argv)
                 break;
 
             case 7: /* Halt. */
+                for (size_t i = 0; i < um.len; i++)
+                    free(um.parr[i]);
+                free(um.parr);
                 exit(0);
                 break;
 
